@@ -46,7 +46,6 @@ class CFDThread
    rho_start) annotation (Include="#include <cfdStartCosimulation.c>",
     IncludeDirectory="modelica://Buildings/Resources/C-Sources",
     LibraryDirectory="modelica://Buildings/Resources/Library", Library="ffd");
-  //external"C" retVal=  cfdStartCosimulation(
  end constructor;
 
  // destructor
