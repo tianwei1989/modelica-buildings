@@ -26,11 +26,7 @@ class CFDThread
   input Integer nC(min=0) "Number of trace substances";
   input Modelica.SIunits.Density rho_start "Density at initial state";
   input Boolean verbose "Set to true for verbose output";
-  //output Integer retVal
-  //    "Return value of the function (0 indicates CFD successfully started.)";
-  // FIXME: need to declare a struct FFDThread as void pointer
   output CFDThread FFDThre "the handler of FFD thread";
-  // FIXME: need to let cfdStartCosimulation return a construct
   external"C" FFDThre=  cfdStartCosimulation(
    cfdFilNam,
    name,
@@ -56,10 +52,8 @@ class CFDThread
  // destructor
  function destructor "release ffd.dll or ffd.so"
   input CFDThread FFDThre "the handler of FFD thread";
-
   external"C" cfdCloseThread(FFDThre)         annotation (Include="#include <cfdCloseThread.c>",
     IncludeDirectory="modelica://Buildings/Resources/C-Sources",
     LibraryDirectory="modelica://Buildings/Resources/Library", Library="ffd");
  end destructor;
-
 end CFDThread;

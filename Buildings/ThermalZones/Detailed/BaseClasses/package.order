@@ -2,6 +2,7 @@ CFDAirHeatMassBalance
 CFDExchange
 CFDFluidInterface
 CFDSurfaceInterface
+CFDThread
 ExteriorBoundaryConditions
 ExteriorBoundaryConditionsWithWindow
 HeatGain
@@ -19,7 +20,6 @@ SolarRadiationExchange
 cfdExchangeData
 cfdReceiveFeedback
 cfdSendStopCommand
-cfdStartCosimulation
 cfdCloseThread
 CFDThread
 to_W

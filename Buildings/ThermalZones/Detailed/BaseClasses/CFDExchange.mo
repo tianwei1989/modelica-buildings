@@ -46,27 +46,23 @@ block CFDExchange "Block that exchanges data with the CFD code"
   discrete Real uIntPre[nWri] "Value of integral at previous sampling instance";
   discrete Real uWri[nWri] "Value to be sent to the CFD interface";
 
-// instantiate the Buildings.ThermalZones.Detailed.BaseClasses.CFDThread.
-// it will send the parameters to FFD when creating the thread at the beginning of coupled simulation.
-// it will automatically close the thread at end of the simulation.
-// returned is the address of the thread which is not used in the model.
-Buildings.ThermalZones.Detailed.BaseClasses.CFDThread ffd = Buildings.ThermalZones.Detailed.BaseClasses.CFDThread(
-    cfdFilNam=cfdFilNam,
-    name=surIde[:].name,
-    A=surIde[:].A,
-    til=surIde[:].til,
-    bouCon=surIde[:].bouCon,
-    haveSensor=haveSensor,
-    portName=portName,
-    sensorName=sensorName,
-    haveShade=haveShade,
-    nSur=nSur,
-    nSen=nSen,
-    nConExtWin=nConExtWin,
-    nPorts=nPorts,
-    nXi=nXi,
-    nC=nC,
-    rho_start=rho_start,
+	Buildings.ThermalZones.Detailed.BaseClasses.CFDThread ffd = Buildings.ThermalZones.Detailed.BaseClasses.CFDThread(
+		cfdFilNam=cfdFilNam,
+		name=surIde[:].name,
+		A=surIde[:].A,
+		til=surIde[:].til,
+		bouCon=surIde[:].bouCon,
+		haveSensor=haveSensor,
+		portName=portName,
+		sensorName=sensorName,
+		haveShade=haveShade,
+		nSur=nSur,
+		nSen=nSen,
+		nConExtWin=nConExtWin,
+		nPorts=nPorts,
+		nXi=nXi,
+		nC=nC,
+		rho_start=rho_start,
 		verbose=verbose);
 
 protected
@@ -78,67 +74,6 @@ protected
     "Current model time received from CFD";
 
   discrete Integer retVal(start=0, fixed=true) "Return value from CFD";
-
-  ///////////////////////////////////////////////////////////////////////////
-  // Function that sends the parameters of the model from Modelica to CFD
-  function sendParameters
-    input String cfdFilNam "CFD input file name";
-    input String[nSur] name "Surface names";
-    input Modelica.SIunits.Area[nSur] A "Surface areas";
-    input Modelica.SIunits.Angle[nSur] til "Surface tilt";
-    input Buildings.ThermalZones.Detailed.Types.CFDBoundaryConditions[nSur] bouCon
-      "Type of boundary condition";
-    input Integer nPorts(min=0)
-      "Number of fluid ports for the HVAC inlet and outlets";
-    input String portName[nPorts]
-      "Names of fluid ports as declared in the CFD input file";
-    input Boolean haveSensor "Flag, true if the model has at least one sensor";
-    input String sensorName[nSen]
-      "Names of sensors as declared in the CFD input file";
-    input Boolean haveShade "Flag, true if the windows have a shade";
-    input Integer nSur(min=2) "Number of surfaces";
-    input Integer nSen(min=0)
-      "Number of sensors that are connected to CFD output";
-    input Integer nConExtWin(min=0)
-      "number of exterior construction with window";
-    input Boolean verbose "Set to true for verbose output";
-    input Integer nXi
-      "Number of independent species concentration of the inflowing medium";
-    input Integer nC "Number of trace substances of the inflowing medium";
-    input Modelica.SIunits.Density rho_start "Density at initial state";
-  protected
-    Integer coSimFlag=0;
-  algorithm
-    if verbose then
-      Modelica.Utilities.Streams.print("CFDExchange:sendParameter");
-    end if;
-
-    for i in 1:nSur loop
-      assert(A[i] > 0, "Surface must be bigger than zero.");
-    end for;
-
-    Modelica.Utilities.Streams.print(string="Start cosimulation");
-    coSimFlag := cfdStartCosimulation(
-        cfdFilNam,
-        name,
-        A,
-        til,
-        bouCon,
-        nPorts,
-        portName,
-        haveSensor,
-        sensorName,
-        haveShade,
-        nSur,
-        nSen,
-        nConExtWin,
-        nXi,
-        nC,
-        rho_start,
-				verbose=verbose);
-    assert(coSimFlag < 0.5, "Could not start the cosimulation.");
-
-  end sendParameters;
 
   ///////////////////////////////////////////////////////////////////////////
   // Function that exchanges data during the time stepping between
@@ -261,28 +196,6 @@ end if;
                          n=nPorts,
                          names=portName);
 
-  // Send parameters to the CFD interface
- // Block this as CFDThread is called.
- /*
-  sendParameters(
-    cfdFilNam=cfdFilNam,
-    name=surIde[:].name,
-    A=surIde[:].A,
-    til=surIde[:].til,
-    bouCon=surIde[:].bouCon,
-    haveSensor=haveSensor,
-    portName=portName,
-    sensorName=sensorName,
-    haveShade=haveShade,
-    nSur=nSur,
-    nSen=nSen,
-    nConExtWin=nConExtWin,
-    nPorts=nPorts,
-    nXi=nXi,
-    nC=nC,
-    rho_start=rho_start,
-    verbose=verbose);
-        */
   // Assignment of parameters and start values
   uInt = zeros(nWri);
   uIntPre = zeros(nWri);
@@ -304,7 +217,7 @@ equation
     der(uInt[i]) = if (flaWri[i] > 0) then u[i] else 0;
   end for;
 
-  when {sampleTrigger, initial()} then
+  when sampleTrigger then
     // Compute value that will be sent to the CFD interface
     for i in 1:nWri loop
       if (flaWri[i] == 0) then
@@ -360,40 +273,6 @@ algorithm
  // will further send the stop command to FFD and close the thread after receiving
  // feedback from FFD.
 
- /*
-  when terminal() then
-    assert(
-      rem(time - startTime, samplePeriod) < 0.00001,
-      "Warning: The simulation time is not a multiple of sampling time.",
-      level=AssertionLevel.warning);
-    if verbose then
-      Modelica.Utilities.Streams.print("CFDExchange:terminate at t=" + String(
-        time));
-    end if;
-    // Send the stopping singal to CFD
-    cfdSendStopCommand();
-
-    // Last exchange of data
-    if activateInterface then
-      (modTimRea,y,retVal) := exchange(
-        flag=0,
-        t=time,
-        dt=samplePeriod,
-        u=uWri,
-        nU=size(u, 1),
-        yFixed=yFixed,
-        nY=size(y, 1),
-        verbose=verbose);
-    else
-      modTimRea := time;
-      y := yFixed;
-      retVal := 0;
-    end if;
-    // Check if CFD has successfully stopped
-    assert(cfdReceiveFeedback() == 0, "Could not terminate the cosimulation.");
-
-  end when;
-        */
   annotation (
     Documentation(info="<html>
 <p>
